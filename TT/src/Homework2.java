@@ -14,7 +14,6 @@ import java.io.PrintWriter;
 import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 public class Homework2 {
 
@@ -112,11 +111,18 @@ public class Homework2 {
         throw new IllegalArgumentException("Unknown type");
     }
 
-    private static List<Equals> getWithout(List<Equals> initial, Equals withoutWhat) {
-        return initial.stream().filter(eq -> !eq.equals(withoutWhat)).collect(Collectors.toList());
+    private static Map<TermExpression, Set<TermVariable>> memory = new HashMap<>();
+
+    private static void remember(TermExpression from, Set<TermVariable> to) {
+        if (!memory.containsKey(from)) {
+            memory.put(from, to);
+        }
     }
 
     private static Set<TermVariable> getFreeVariables(TermExpression expression) {
+        if (memory.containsKey(expression)) {
+            return memory.get(expression);
+        }
         HashSet<TermVariable> set = new HashSet<>();
         if (expression instanceof TermVariable) {
             set.add((TermVariable) expression);
@@ -126,6 +132,7 @@ public class Homework2 {
                 set.addAll(getFreeVariables(var));
             }
         }
+        remember(expression, set);
         return set;
     }
 
