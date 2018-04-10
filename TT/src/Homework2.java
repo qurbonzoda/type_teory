@@ -162,81 +162,76 @@ public class Homework2 {
     }
 
     private static List<Equals> solveSystem(List<Equals> system) throws SystemException {
-        repeat:
-        while (true) {
-            if (system.isEmpty()) break;
-
-            for (Equals eq : system) {
-                //1 rule
-                if (eq.left.equals(eq.right)) {
-                    system = getWithout(system, eq);
-                    continue repeat;
-                }
-
-                TermExpression leftPart = eq.left;
-                TermExpression rightPart = eq.right;
-
-                if (leftPart instanceof Function && rightPart instanceof Function) {
-                    Function leftF = (Function) leftPart;
-                    Function rightF = (Function) rightPart;
-
-                    //3 rule - conflict
-                    if (!leftF.getName().equals(rightF.getName()) || leftF.getArgs().size() != rightF.getArgs().size()) {
-                        throw new SystemException("Система неразрешима: " + leftF + " != " + rightF);
-                    }
-
-                    //2 rule - decompose
-                    List<Equals> nextSystem = getWithout(system, eq);
-                    List<TermExpression> lefts = leftF.getArgs();
-                    List<TermExpression> rights = rightF.getArgs();
-
-                    for (int i = 0; i < lefts.size(); i++) {
-                        nextSystem.add(new Equals(lefts.get(i), rights.get(i)));
-                    }
-
-                    system = nextSystem;
-                    continue repeat;
-                }
-
-                //4 rule (swap)
-                if (leftPart instanceof Function && rightPart instanceof TermVariable) {
-                    List<Equals> nextSystem = getWithout(system, eq);
-                    nextSystem.add(new Equals(rightPart, leftPart));
-                    system = nextSystem;
-                    continue repeat;
-                }
-
-                //6 rule (check)
-                if (leftPart instanceof TermVariable) {
-                    if (getFreeVariables(rightPart).contains(leftPart)) {
-                        throw new SystemException("Система неразрешима: переменная " + leftPart + " входит свободно в " + rightPart);
-                    }
-
-                    //5 rule (eliminate)
-                    List<Equals> nextSystem = getWithout(system, eq);
-
-                    boolean isInG = false;
-                    for (Equals neq : nextSystem) {
-                        if (getFreeVariables(neq.left).contains(leftPart)) {
-                            isInG = true;
-                            break;
-                        }
-                        if (getFreeVariables(neq.right).contains(leftPart)) {
-                            isInG = true;
-                            break;
-                        }
-                    }
-
-                    if (isInG) {
-                        nextSystem = substitute(nextSystem, (TermVariable) leftPart, rightPart);
-                        nextSystem.add(new Equals(leftPart, rightPart));
-                        system = nextSystem;
-                        continue repeat;
-                    }
-                }
-
+        for (int i = 0; i < system.size(); i++) {
+            Equals eq = system.get(i);
+            if (eq.left.equals(eq.right)) {
+                system.remove(i);
+                i -= 1;
+                continue;
             }
-            break;
+
+            TermExpression leftPart = eq.left;
+            TermExpression rightPart = eq.right;
+
+            if (leftPart instanceof Function && rightPart instanceof Function) {
+                Function leftF = (Function) leftPart;
+                Function rightF = (Function) rightPart;
+
+                //3 rule - conflict
+                if (!leftF.getName().equals(rightF.getName()) || leftF.getArgs().size() != rightF.getArgs().size()) {
+                    throw new SystemException("Система неразрешима: " + leftF + " != " + rightF);
+                }
+
+                //2 rule - decompose
+                system.remove(i);
+                List<TermExpression> lefts = leftF.getArgs();
+                List<TermExpression> rights = rightF.getArgs();
+
+                for (int j = 0; j < lefts.size(); j++) {
+                    system.add(new Equals(lefts.get(j), rights.get(j)));
+                }
+                i -= 1;
+                continue;
+            }
+
+            //4 rule (swap)
+            if (leftPart instanceof Function && rightPart instanceof TermVariable) {
+                system.remove(i);
+                system.add(new Equals(rightPart, leftPart));
+                i -= 1;
+                continue;
+            }
+
+            //6 rule (check)
+            if (leftPart instanceof TermVariable) {
+                if (getFreeVariables(rightPart).contains(leftPart)) {
+                    throw new SystemException("Система неразрешима: переменная " + leftPart + " входит свободно в " + rightPart);
+                }
+
+                //5 rule (eliminate)
+
+                boolean isInG = false;
+                for (int j = 0; j < system.size(); j++) {
+                    if (i == j) continue;
+                    Equals neq = system.get(j);
+                    if (getFreeVariables(neq.left).contains(leftPart)) {
+                        isInG = true;
+                        break;
+                    }
+                    if (getFreeVariables(neq.right).contains(leftPart)) {
+                        isInG = true;
+                        break;
+                    }
+                }
+
+                if (isInG) {
+                    system.remove(i);
+                    system = substitute(system, (TermVariable) leftPart, rightPart);
+                    system.add(new Equals(leftPart, rightPart));
+                    i = -1;
+                    continue;
+                }
+            }
         }
         return system;
     }
