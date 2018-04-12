@@ -2,13 +2,13 @@ package termTree;
 
 import java.util.List;
 
-public class Function implements TermExpression {
+public class AlgebraicFunction implements TermExpression {
 
     private final List<TermExpression> args;
 
     private final String name;
 
-    public Function(List<TermExpression> args, String name) {
+    public AlgebraicFunction(List<TermExpression> args, String name) {
         this.args = args;
         this.name = name;
     }
@@ -26,7 +26,7 @@ public class Function implements TermExpression {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Function function = (Function) o;
+        AlgebraicFunction function = (AlgebraicFunction) o;
 
         if (getArgs() != null ? !getArgs().equals(function.getArgs()) : function.getArgs() != null) return false;
         return !(getName() != null ? !getName().equals(function.getName()) : function.getName() != null);

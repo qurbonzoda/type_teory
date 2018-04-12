@@ -4,7 +4,7 @@ import lambdaTree.Applicative;
 import lambdaTree.LambdaExpression;
 import lambdaTree.LambdaVariable;
 import parsers.LambdaParser;
-import termTree.Function;
+import termTree.AlgebraicFunction;
 import termTree.TermExpression;
 import termTree.TermVariable;
 
@@ -17,12 +17,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Homework2 {
 
-    private static class Equals {
+    static class Equals {
 
         public final TermExpression left;
         public final TermExpression right;
 
-        private Equals(TermExpression left, TermExpression right) {
+        Equals(TermExpression left, TermExpression right) {
             this.left = left;
             this.right = right;
         }
@@ -59,7 +59,7 @@ public class Homework2 {
         List<TermExpression> args = new ArrayList<>();
         args.add(v1);
         args.add(v2);
-        return new Function(args, FUNC_NAME);
+        return new AlgebraicFunction(args, FUNC_NAME);
     }
 
     private static TermExpression getArrow(int n1, int n2) {
@@ -127,7 +127,7 @@ public class Homework2 {
         if (expression instanceof TermVariable) {
             set.add((TermVariable) expression);
         } else {
-            Function function = (Function) expression;
+            AlgebraicFunction function = (AlgebraicFunction) expression;
             for (TermExpression var : function.getArgs()) {
                 set.addAll(getFreeVariables(var));
             }
@@ -143,12 +143,12 @@ public class Homework2 {
             }
             return expression;
         } else {
-            Function function = (Function) expression;
+            AlgebraicFunction function = (AlgebraicFunction) expression;
             List<TermExpression> newArgs = new ArrayList<>();
             for (TermExpression arg : function.getArgs()) {
                 newArgs.add(substitute(arg, termVariable, replacement));
             }
-            return new Function(newArgs, function.getName());
+            return new AlgebraicFunction(newArgs, function.getName());
         }
     }
 
@@ -168,7 +168,7 @@ public class Homework2 {
         }
     }
 
-    private static List<Equals> solveSystem(List<Equals> system) throws SystemException {
+    static List<Equals> solveSystem(List<Equals> system) throws SystemException {
         for (int i = 0; i < system.size(); i++) {
             Equals eq = system.get(i);
             if (eq.left.equals(eq.right)) {
@@ -180,9 +180,9 @@ public class Homework2 {
             TermExpression leftPart = eq.left;
             TermExpression rightPart = eq.right;
 
-            if (leftPart instanceof Function && rightPart instanceof Function) {
-                Function leftF = (Function) leftPart;
-                Function rightF = (Function) rightPart;
+            if (leftPart instanceof AlgebraicFunction && rightPart instanceof AlgebraicFunction) {
+                AlgebraicFunction leftF = (AlgebraicFunction) leftPart;
+                AlgebraicFunction rightF = (AlgebraicFunction) rightPart;
 
                 //3 rule - conflict
                 if (!leftF.getName().equals(rightF.getName()) || leftF.getArgs().size() != rightF.getArgs().size()) {
@@ -202,7 +202,7 @@ public class Homework2 {
             }
 
             //4 rule (swap)
-            if (leftPart instanceof Function && rightPart instanceof TermVariable) {
+            if (leftPart instanceof AlgebraicFunction && rightPart instanceof TermVariable) {
                 system.remove(i);
                 system.add(new Equals(rightPart, leftPart));
                 i -= 1;
@@ -248,7 +248,7 @@ public class Homework2 {
         if (expression instanceof TermVariable) {
             return expression.toString();
         }
-        Function function = (Function) expression;
+        AlgebraicFunction function = (AlgebraicFunction) expression;
         List<TermExpression> args = function.getArgs();
         if (args.size() != 2) {
             throw new IllegalArgumentException("Incorrect arguments size in term");

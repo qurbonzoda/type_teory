@@ -2,10 +2,9 @@ package parsers;
 
 import exceptions.IllegalCharacterException;
 import exceptions.ParserException;
-import lambdaTree.Abstraction;
-import lambdaTree.Applicative;
-import lambdaTree.LambdaExpression;
-import lambdaTree.LambdaVariable;
+import lambdaTree.*;
+
+import java.util.Objects;
 
 public class LambdaParser {
     private String expression;
@@ -37,6 +36,9 @@ public class LambdaParser {
 
         LBRACE("("),
         RBRACE(")"),
+        LET("let"),
+        LET_EQUAL("="),
+        LET_IN("in"),
         LAMBDA("\\"),
         DOT("."),
         LOWER_LETTER("low"),
@@ -76,6 +78,12 @@ public class LambdaParser {
             while (isLowerLetter(currentChar()) || isDigit(currentChar())) {
                 currentString += currentChar();
                 position++;
+            }
+            if (currentString.equals(Token.LET.name)) {
+                return Token.LET;
+            }
+            if (currentString.equals(Token.LET_IN.name)) {
+                return Token.LET_IN;
             }
             return Token.LOWER_LETTER;
         }
@@ -130,28 +138,43 @@ public class LambdaParser {
     }
 
     private LambdaExpression readAbstraction() throws ParserException {
-        //(абстракция) ::= (переменная) '.' (Выражение)
-        LambdaExpression variable = readVariable();
-        if (currentToken != Token.DOT) {
-            throw new ParserException("Expected dot '.' but found " + currentString);
+        //(абстракция) ::= [(применение)] '\' (переменная) '.' (абстракция) | (применение)
+        if (currentToken == Token.LAMBDA) {
+            return readLambda();
+        }
+        LambdaExpression applicative = readApplicative();
+        if (currentToken == Token.LAMBDA) {
+            LambdaExpression abstraction = readLambda();
+            return new Applicative(applicative, abstraction);
+        }
+        return applicative;
+    }
+
+    private Abstraction readLambda() throws ParserException {
+        if (currentToken != Token.LAMBDA) {
+            throw new ParserException("'\\' expected, got " + currentString);
         }
         currentToken = nextToken();
-        LambdaExpression expression = readExpression();
-        return new Abstraction(variable, expression);
+        LambdaExpression variable = readVariable();
+        if (currentToken != Token.DOT) throw new ParserException("'.' expected, got " + currentString);
+        currentToken = nextToken();
+        LambdaExpression statement = readAbstraction();
+        return new Abstraction(variable, statement);
     }
 
     private LambdaExpression readExpression() throws ParserException {
-        //(выражение)  ::= [(применение)] '\' (абстракция) | (применение)
-        if (currentToken == Token.LAMBDA) {
+        //(выражение)  ::= 'let' (переменная) '=' (выражение) 'in' (выражение) | (абстракция)
+        if (currentToken == Token.LET) {
             currentToken = nextToken();
-            return readAbstraction();
-        }
-        LambdaExpression result = readApplicative();
-        if (currentToken == Token.LAMBDA) {
+            LambdaExpression variable = readVariable();
+            if (currentToken != Token.LET_EQUAL) throw new ParserException("'=' expected, got "+ currentString);
             currentToken = nextToken();
-            LambdaExpression abstraction = readAbstraction();
-            result = new Applicative(result, abstraction);
+            LambdaExpression variableExpr = readExpression();
+            if (currentToken != Token.LET_IN) throw new ParserException("'in' expected, got " + currentString);
+            currentToken = nextToken();
+            LambdaExpression inExpr = readExpression();
+            return new LetExpression(variable, variableExpr, inExpr);
         }
-        return result;
+        return readAbstraction();
     }
 }
